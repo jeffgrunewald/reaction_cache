@@ -1,104 +1,87 @@
 defmodule ReactionCacheWeb.ReactionControllerTest do
   use ReactionCacheWeb.ConnCase
 
-  alias ReactionCache.Content
-  alias ReactionCache.Content.Reaction
-
   @create_attrs %{
-    action: "some action",
-    content_id: "some content_id",
-    reaction_type: "some reaction_type",
-    type: "some type",
-    user_id: "some user_id"
+    action: "add",
+    content_id: "123-456",
+    reaction_type: "fire",
+    type: "reaction",
+    user_id: "abc-def"
   }
-  @update_attrs %{
-    action: "some updated action",
-    content_id: "some updated content_id",
-    reaction_type: "some updated reaction_type",
-    type: "some updated type",
-    user_id: "some updated user_id"
+  @delete_attrs %{
+    action: "remove",
+    content_id: "123-456",
+    reaction_type: "fire",
+    type: "reaction",
+    user_id: "abc-def"
   }
   @invalid_attrs %{action: nil, content_id: nil, reaction_type: nil, type: nil, user_id: nil}
 
-  def fixture(:reaction) do
-    {:ok, reaction} = Content.create_reaction(@create_attrs)
-    reaction
-  end
-
   setup %{conn: conn} do
+    #ReactionCache.remove_reaction("123-456", "abc-def", "fire")
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  describe "index" do
-    test "lists all reaction", %{conn: conn} do
-      conn = get(conn, Routes.reaction_path(conn, :index))
-      assert json_response(conn, 200)["data"] == []
+  describe "empty cache" do
+    test "non-existent content id", %{conn: conn} do
+      conn = get(conn, "/api/reaction_counts/123-456")
+      assert response(conn, 404) == ""
     end
   end
 
   describe "create reaction" do
-    test "renders reaction when data is valid", %{conn: conn} do
-      conn = post(conn, Routes.reaction_path(conn, :create), reaction: @create_attrs)
-      assert %{"id" => id} = json_response(conn, 201)["data"]
+    setup [:setup_remove]
 
-      conn = get(conn, Routes.reaction_path(conn, :show, id))
+    test "renders reaction when data is valid", %{conn: conn} do
+      conn = post(conn, "/api/reaction", @create_attrs)
+      assert "Reaction cached!" == response(conn, 201)
+
+      conn = get(conn, "/api/reaction_counts/123-456")
 
       assert %{
-               "id" => id,
-               "action" => "some action",
-               "content_id" => "some content_id",
-               "reaction_type" => "some reaction_type",
-               "type" => "some type",
-               "user_id" => "some user_id"
-             } = json_response(conn, 200)["data"]
+               "content_id" => "123-456",
+               "reaction_count" => %{
+                 "fire" => 1
+               }
+             } == json_response(conn, 200)
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
-      conn = post(conn, Routes.reaction_path(conn, :create), reaction: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+      conn = post(conn, "/api/reaction", @invalid_attrs)
+      assert response(conn, 400) == "Unable to save reaction; did you supply a content_id, user_id, and reaction_type?"
     end
   end
 
-  describe "update reaction" do
-    setup [:create_reaction]
+  describe "remove reaction" do
+    setup [:setup_add]
 
-    test "renders reaction when data is valid", %{conn: conn, reaction: %Reaction{id: id} = reaction} do
-      conn = put(conn, Routes.reaction_path(conn, :update, reaction), reaction: @update_attrs)
-      assert %{"id" => ^id} = json_response(conn, 200)["data"]
+    test "deletes chosen reaction", %{conn: conn} do
+      conn = get(conn, "/api/reaction_counts/123-456")
+      assert %{"content_id" => "123-456",
+               "reaction_count" => %{
+                 "fire" => 1
+               }
+              } == json_response(conn, 200)
 
-      conn = get(conn, Routes.reaction_path(conn, :show, id))
+      conn = post(conn, "/api/reaction", @delete_attrs)
+      assert response(conn, 200) == "Reaction removed!"
 
-      assert %{
-               "id" => id,
-               "action" => "some updated action",
-               "content_id" => "some updated content_id",
-               "reaction_type" => "some updated reaction_type",
-               "type" => "some updated type",
-               "user_id" => "some updated user_id"
-             } = json_response(conn, 200)["data"]
-    end
-
-    test "renders errors when data is invalid", %{conn: conn, reaction: reaction} do
-      conn = put(conn, Routes.reaction_path(conn, :update, reaction), reaction: @invalid_attrs)
-      assert json_response(conn, 422)["errors"] != %{}
+      conn = get(conn, "/api/reaction_counts/123-456")
+      assert response(conn, 404) == ""
     end
   end
 
-  describe "delete reaction" do
-    setup [:create_reaction]
+  defp setup_add(_) do
+    ReactionCache.add_reaction("123-456", "abc-def", "fire")
 
-    test "deletes chosen reaction", %{conn: conn, reaction: reaction} do
-      conn = delete(conn, Routes.reaction_path(conn, :delete, reaction))
-      assert response(conn, 204)
-
-      assert_error_sent 404, fn ->
-        get(conn, Routes.reaction_path(conn, :show, reaction))
-      end
-    end
+    :ok
   end
 
-  defp create_reaction(_) do
-    reaction = fixture(:reaction)
-    {:ok, reaction: reaction}
+  defp setup_remove(_) do
+    on_exit(fn ->
+      ReactionCache.remove_reaction("123-456", "abc-def", "fire")
+    end)
+
+    :ok
   end
 end

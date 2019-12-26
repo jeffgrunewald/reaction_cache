@@ -2,19 +2,21 @@ defmodule ReactionCacheTest do
   use ExUnit.Case
   import TestHelper
 
-  setup do
-    {:ok, cache} = ReactionCache.start_link([])
+  # setup do
+  #   {:ok, cache} = ReactionCache.start_link([])
 
-    on_exit(fn ->
-      Process.exit(cache, :kill)
-    end)
-  end
+  #   on_exit(fn ->
+  #     Process.exit(cache, :kill)
+  #   end)
+  # end
 
   test "returns no reactions for new content" do
     assert %{} == ReactionCache.get_reactions("content1")
   end
 
   describe "add_reaction/3" do
+    setup [:cleanup]
+
     test "adds user reactions to content" do
       ReactionCache.add_reaction("content1", "user1", "fire")
       ReactionCache.add_reaction("content1", "user2", "fire")
@@ -63,12 +65,7 @@ defmodule ReactionCacheTest do
   end
 
   describe "remove_reaction/3" do
-    setup do
-      ReactionCache.add_reaction("content1", "user1", "fire")
-      ReactionCache.add_reaction("content1", "user1", "ice")
-      ReactionCache.add_reaction("content2", "user1", "fire")
-      ReactionCache.add_reaction("content1", "user2", "fire")
-    end
+    setup [:seed, :cleanup]
 
     test "removes a single reaction" do
       ReactionCache.remove_reaction("content1", "user1", "fire")
@@ -111,5 +108,24 @@ defmodule ReactionCacheTest do
         assert %{} == ReactionCache.get_reactions("content3")
       end)
     end
+  end
+
+  defp cleanup(_) do
+    on_exit(fn ->
+      ReactionCache.remove_reaction("content1", "user1", "fire")
+      ReactionCache.remove_reaction("content1", "user2", "fire")
+      ReactionCache.remove_reaction("content1", "user1", "ice")
+      ReactionCache.remove_reaction("content2", "user1", "fire")
+    end)
+
+    :ok
+  end
+
+  defp seed(_) do
+    ReactionCache.add_reaction("content1", "user1", "fire")
+    ReactionCache.add_reaction("content1", "user1", "ice")
+    ReactionCache.add_reaction("content2", "user1", "fire")
+    ReactionCache.add_reaction("content1", "user2", "fire")
+    :ok
   end
 end

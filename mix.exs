@@ -9,7 +9,6 @@ defmodule ReactionCache.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
-      aliases: aliases(),
       deps: deps()
     ]
   end
@@ -32,12 +31,6 @@ defmodule ReactionCache.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:patiently, "~> 0.2.0", only: :test}
-    ]
-  end
-
-  defp aliases() do
-    [
-      test: "test --no-start"
     ]
   end
 end

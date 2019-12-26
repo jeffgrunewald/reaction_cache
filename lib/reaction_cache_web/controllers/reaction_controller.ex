@@ -27,6 +27,10 @@ defmodule ReactionCacheWeb.ReactionController do
     end
   end
 
+  def react(conn, _) do
+    send_resp(conn, 400, @error_message)
+  end
+
   def get_counts(conn, %{"content_id" => id}) do
     case ReactionCache.get_reactions(id) do
       map when map == %{} ->
