@@ -2,14 +2,6 @@ defmodule ReactionCacheTest do
   use ExUnit.Case
   import TestHelper
 
-  # setup do
-  #   {:ok, cache} = ReactionCache.start_link([])
-
-  #   on_exit(fn ->
-  #     Process.exit(cache, :kill)
-  #   end)
-  # end
-
   test "returns no reactions for new content" do
     assert %{} == ReactionCache.get_reactions("content1")
   end

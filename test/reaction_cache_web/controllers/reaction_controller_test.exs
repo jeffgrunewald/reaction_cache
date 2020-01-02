@@ -18,7 +18,7 @@ defmodule ReactionCacheWeb.ReactionControllerTest do
   @invalid_attrs %{action: nil, content_id: nil, reaction_type: nil, type: nil, user_id: nil}
 
   setup %{conn: conn} do
-    #ReactionCache.remove_reaction("123-456", "abc-def", "fire")
+    ReactionCache.remove_reaction("123-456", "abc-def", "fire")
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
@@ -48,7 +48,9 @@ defmodule ReactionCacheWeb.ReactionControllerTest do
 
     test "renders errors when data is invalid", %{conn: conn} do
       conn = post(conn, "/api/reaction", @invalid_attrs)
-      assert response(conn, 400) == "Unable to save reaction; did you supply a content_id, user_id, and reaction_type?"
+
+      assert response(conn, 400) ==
+               "Unable to save reaction; did you supply a content_id, user_id, and reaction_type?"
     end
   end
 
@@ -57,11 +59,13 @@ defmodule ReactionCacheWeb.ReactionControllerTest do
 
     test "deletes chosen reaction", %{conn: conn} do
       conn = get(conn, "/api/reaction_counts/123-456")
-      assert %{"content_id" => "123-456",
+
+      assert %{
+               "content_id" => "123-456",
                "reaction_count" => %{
                  "fire" => 1
                }
-              } == json_response(conn, 200)
+             } == json_response(conn, 200)
 
       conn = post(conn, "/api/reaction", @delete_attrs)
       assert response(conn, 200) == "Reaction removed!"

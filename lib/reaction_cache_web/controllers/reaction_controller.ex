@@ -35,6 +35,7 @@ defmodule ReactionCacheWeb.ReactionController do
     case ReactionCache.get_reactions(id) do
       map when map == %{} ->
         send_resp(conn, 404, "")
+
       map ->
         json(conn, %{content_id: id, reaction_count: map})
     end
